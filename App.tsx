@@ -13,9 +13,6 @@ import {
 import { Subscription } from 'rxjs';
 import { VolumeManager } from 'react-native-volume-manager';
 import { accelerometer, gyroscope, setUpdateIntervalForType, SensorTypes } from 'react-native-sensors';
-// import * as tf from '@tensorflow/tfjs';
-// import { bundleResourceIO } from '@tensorflow/tfjs-react-native';
-
 import { Vector3D } from './src/utils/vector';
 import { autoCalibrate, initializeOrientaion } from './src/utils/math';
 
@@ -23,26 +20,12 @@ const timeInterval = 50; // ms
 
 function App() {
   const [, forceUpdate] = useReducer(x => x + 1, 0);
-
   const data = useRef<string>('index,time,acc x,acc y,acc z,sin ori x,sin ori y,sin ori z,user input\n');
   const [subscription, setSubscription] = useState<Subscription | null>(null);
-  // const [punchDetector, setPunchDetector] = useState<tf.LayersModel | null>(null);
   const orientationInitialized = useRef<boolean>(false);
-
   const acceleration = useRef<Vector3D>(new Vector3D(0, 0, 0));
   const orientation = useRef<Vector3D>(new Vector3D(0, 0, 0));
-
   const volumeListener = useRef<ReturnType<typeof VolumeManager.addVolumeListener> | null>(null);
-
-  // try {
-  //   const model = await require('./assets/models/gru-6d/model.json');
-  //   console.log('Model loaded successfully:', model);
-  //   const weight = await require('./assets/models/gru-6d/weight.bin');
-  //   console.log('Weights loaded successfully:', weight);
-  //   setPunchDetector(await tf.loadLayersModel(bundleResourceIO(model, weight)));
-  // } catch (error) {
-  //   console.error('Error loading model:', error);
-  // }
 
   const startSensor = () => {
     if (!subscription) {
@@ -72,16 +55,10 @@ function App() {
           orientation.current = initializeOrientaion(new Vector3D(x, y, z));
           acceleration.current = new Vector3D(x, y, z);
           orientationInitialized.current = true;
-          // punchDetector?.predict([acceleration.current.x, acceleration.current.y, acceleration.current.z, orientation.current.x, orientation.current.y, orientation.current.z]);
         } else {
           let result = autoCalibrate(new Vector3D(x, y, z), _gyro, orientation.current, timeInterval);
           orientation.current = result.orientation;
           acceleration.current = result.acceleration;
-          // punchDetector?.predict([acceleration.current.x, acceleration.current.y, acceleration.current.z, orientation.current.x, orientation.current.y, orientation.current.z]).then((prediction) => {
-          //   if (prediction[0] > 0.5) {
-          //     Vibration.vibrate(100);
-          //   }
-          // });
         }
 
         if (startTime === null) {
