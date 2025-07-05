@@ -1,57 +1,25 @@
-type Vector3D = {
-  x: number;
-  y: number;
-  z: number;
-};
+import {Vector3D, defaultVector} from './vector';
 
 type CalibrationResult = {
   acceleration: Vector3D;
   orientation: Vector3D;
 };
 
-const subtractVectors = (a: Vector3D, b: Vector3D): Vector3D => {
-  return {
-    x: a.x - b.x,
-    y: a.y - b.y,
-    z: a.z - b.z,
-  };
-};
-
-const normalizeVector = (vector: Vector3D): Vector3D => {
-  const magnitude = Math.sqrt(vector.x ** 2 + vector.y ** 2 + vector.z ** 2);
-  if (magnitude === 0) {
-    return {x: 0, y: 0, z: 0};
-  }
-  return {
-    x: vector.x / magnitude,
-    y: vector.y / magnitude,
-    z: vector.z / magnitude,
-  };
-};
-
 const initializeOrientaion = (acceleration: Vector3D): Vector3D => {
-  acceleration = normalizeVector(acceleration);
-  return {
-    x: -Math.PI - Math.atan2(acceleration.z, acceleration.y),
-    y: 0,
-    z: Math.asin(acceleration.x),
-  };
+  acceleration = acceleration.normalize();
+  return new Vector3D(
+    -Math.PI - Math.atan2(acceleration.z, acceleration.y),
+    0,
+    Math.asin(acceleration.x),
+  );
 };
 
 const calculateGravity = (orientaion: Vector3D): Vector3D => {
-  return {
-    x: Math.sin(orientaion.z),
-    y: -Math.cos(orientaion.x) * Math.cos(orientaion.z),
-    z: Math.cos(orientaion.x) * Math.sin(orientaion.z),
-  };
-};
-
-const removeGravity = (
-  acceleration: Vector3D,
-  orientaion: Vector3D,
-): Vector3D => {
-  const gravity = calculateGravity(orientaion);
-  return subtractVectors(acceleration, gravity);
+  return new Vector3D(
+    -Math.sin(orientaion.z),
+    -Math.cos(orientaion.x) * Math.cos(orientaion.z),
+    Math.sin(orientaion.x) * Math.cos(orientaion.z),
+  );
 };
 
 const integrateGyro = (
@@ -59,11 +27,11 @@ const integrateGyro = (
   gyro: Vector3D,
   dt: number,
 ): Vector3D => {
-  return {
-    x: orientation.x + (gyro.x * dt) / 1000,
-    y: orientation.y + (gyro.y * dt) / 1000,
-    z: orientation.z + (gyro.z * dt) / 1000,
-  };
+  return new Vector3D(
+    orientation.x + (gyro.x * dt) / 1000,
+    orientation.y + (gyro.y * dt) / 1000,
+    orientation.z + (gyro.z * dt) / 1000,
+  );
 };
 
 const radiansToDegrees = (radians: number): number => {
@@ -73,31 +41,30 @@ const radiansToDegrees = (radians: number): number => {
 const autoCalibrate = (
   acceleration: Vector3D,
   gyro: Vector3D,
-  previousOrientation: Vector3D,
+  orientation: Vector3D,
   dt: number,
 ): CalibrationResult => {
-  const magnitude = Math.sqrt(
-    acceleration.x ** 2 + acceleration.y ** 2 + acceleration.z ** 2,
-  );
+  const threshold = 1.1;
 
-  if (magnitude <= 1) {
-    let _acceleration = normalizeVector(acceleration);
-    let _orientation = {
-      x: -Math.PI - Math.atan2(_acceleration.z, _acceleration.y),
-      y: previousOrientation.y + (gyro.y * dt) / 1000,
-      z: Math.asin(_acceleration.x),
-    };
-    return {
-      acceleration: acceleration,
-      orientation: _orientation,
-    };
+  // cosine similarity should be more than 0.5(which means 60 degrees) since the error value magnifies as the angle converges to 90 degrees(x axis)
+  if (
+    acceleration.magnitude() < threshold &&
+    acceleration.cosineSimilarity(defaultVector) > 0.5
+  ) {
+    let _acceleration = acceleration.normalize();
+    orientation = new Vector3D(
+      -Math.PI - Math.atan2(_acceleration.z, _acceleration.y),
+      orientation.y + (gyro.y * dt) / 1000,
+      -Math.asin(_acceleration.x),
+    );
   } else {
-    let _orientation = integrateGyro(previousOrientation, gyro, dt);
-    return {
-      acceleration: removeGravity(acceleration, _orientation),
-      orientation: _orientation,
-    };
+    orientation = integrateGyro(orientation, gyro, dt);
   }
+
+  return {
+    acceleration: acceleration.subtract(calculateGravity(orientation)),
+    orientation: orientation,
+  };
 };
 
 export type {Vector3D};
@@ -105,7 +72,6 @@ export {
   autoCalibrate,
   initializeOrientaion,
   calculateGravity,
-  removeGravity,
   integrateGyro,
   radiansToDegrees,
 };

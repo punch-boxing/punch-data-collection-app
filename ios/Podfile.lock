@@ -8,6 +8,7 @@ PODS:
   - hermes-engine (0.79.1):
     - hermes-engine/Pre-built (= 0.79.1)
   - hermes-engine/Pre-built (0.79.1)
+  - Mute (0.6.1)
   - RCT-Folly (2024.11.18.00):
     - boost
     - DoubleConversion
@@ -1332,6 +1333,9 @@ PODS:
     - React-jsiexecutor
     - React-RCTFBReactNativeSpec
     - ReactCommon/turbomodule/core
+  - react-native-volume-manager (2.0.8):
+    - Mute
+    - React-Core
   - React-NativeModulesApple (0.79.1):
     - glog
     - hermes-engine
@@ -1700,6 +1704,7 @@ DEPENDENCIES:
   - React-logger (from `../node_modules/react-native/ReactCommon/logger`)
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
+  - react-native-volume-manager (from `../node_modules/react-native-volume-manager`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
   - React-oscompat (from `../node_modules/react-native/ReactCommon/oscompat`)
   - React-perflogger (from `../node_modules/react-native/ReactCommon/reactperflogger`)
@@ -1736,6 +1741,7 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
+    - Mute
     - SocketRocket
 
 EXTERNAL SOURCES:
@@ -1816,6 +1822,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   React-microtasksnativemodule:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
+  react-native-volume-manager:
+    :path: "../node_modules/react-native-volume-manager"
   React-NativeModulesApple:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios"
   React-oscompat:
@@ -1891,6 +1899,7 @@ SPEC CHECKSUMS:
   fmt: a40bb5bd0294ea969aaaba240a927bd33d878cdd
   glog: 5683914934d5b6e4240e497e0f4a3b42d1854183
   hermes-engine: c32f2e405098bc1ebe30630a051ddce6f21d3c2e
+  Mute: 20135a96076f140cc82bfc8b810e2d6150d8ec7e
   RCT-Folly: 36fe2295e44b10d831836cc0d1daec5f8abcf809
   RCTDeprecation: 0ada4fb1e5c5637bff940dc40b94e2d3bf96b0ab
   RCTRequired: 76ca80ff10acb3834ed0dacba9645645009578a2
@@ -1922,6 +1931,7 @@ SPEC CHECKSUMS:
   React-logger: 34debb54489c4c02e5de4cc057a0943e97d2038a
   React-Mapbuffer: 206115a22168bd42d6ef21acfe5eb5b39589ed53
   React-microtasksnativemodule: 32f7f13d65525e981e9a5b28cebad7d10e0ff711
+  react-native-volume-manager: 25d400a8fdb7b0e93a50cad33b745fb9e6577a30
   React-NativeModulesApple: 6d750bb9829fdf0f02c56e9a68cbb390e1f5de25
   React-oscompat: 74eb4badd12e93899f37a5dbb03d8a638011a292
   React-perflogger: 53be4c46645bbccec870dd82a24764aca9bae4c2
