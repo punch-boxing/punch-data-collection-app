@@ -17,12 +17,15 @@ import { Vector3D } from './src/utils/vector';
 import { autoCalibrate, initializeOrientaion } from './src/utils/math';
 
 const timeInterval = 50; // ms
+const columns = 'index,time,acc x,acc y,acc z,ori x,ori z,punch\n';
+const punchTypes = ['Straight', 'Hook', 'UpperCut', 'Body'];
 
 function App() {
   const [, forceUpdate] = useReducer(x => x + 1, 0);
-  const data = useRef<string>('index,time,acc x,acc y,acc z,sin ori x,sin ori y,sin ori z,user input\n');
+  const data = useRef<string>(columns);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const orientationInitialized = useRef<boolean>(false);
+  const punchTypeIndex = useRef<number>(0);
   const acceleration = useRef<Vector3D>(new Vector3D(0, 0, 0));
   const orientation = useRef<Vector3D>(new Vector3D(0, 0, 0));
   const volumeListener = useRef<ReturnType<typeof VolumeManager.addVolumeListener> | null>(null);
@@ -37,17 +40,18 @@ function App() {
       setUpdateIntervalForType(SensorTypes.gyroscope, timeInterval);
       setUpdateIntervalForType(SensorTypes.accelerometer, timeInterval);
 
-      let volumeChanged = 0;
+      let punch = 'None';
 
       volumeListener.current = VolumeManager.addVolumeListener((result) => {
         if (currentVolume !== result.volume) {
-          volumeChanged = 1;
+          punch = punchTypes[punchTypeIndex.current];
         }
         currentVolume = result.volume;
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const gyroSubscription = gyroscope.subscribe(({ x, y, z }) => {
-        _gyro = new Vector3D(x, y, z);
+        _gyro = new Vector3D(x, 0, z);
       });
 
       const accelSubscription = accelerometer.subscribe(({ x, y, z, timestamp }) => {
@@ -65,8 +69,8 @@ function App() {
           startTime = timestamp;
         }
         const elapsedTime = (timestamp - startTime) / 1000;
-        data.current += `${index},${elapsedTime},${x},${y},${z},${Math.sin(orientation.current.x)},${Math.sin(orientation.current.y)},${Math.sin(orientation.current.z)},${volumeChanged}\n`;
-        volumeChanged = 0;
+        data.current += `${index},${elapsedTime},${x},${y},${z},${Math.sin(orientation.current.x)},${Math.sin(orientation.current.z)},${punch}\n`;
+        punch = 'None';
         index++;
         forceUpdate();
       });
@@ -89,23 +93,17 @@ function App() {
 
   return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: 24 }}>
-        <Text style={{ fontSize: 24 }}>Sensor Data Logger</Text>
-        <Text>Accelerometer and Gyroscope</Text>
         <Text style={{color: 'white'}}>
           acceleration x : {acceleration.current.x.toFixed(2)} {'\n'}
           acceleration y : {acceleration.current.y.toFixed(2)} {'\n'}
           acceleration z : {acceleration.current.z.toFixed(2)} {'\n'}
           {'\n'}
           rotation x : {Math.sin(orientation.current.x).toFixed(2)} {'\n'}
-          rotation y : {Math.sin(orientation.current.y).toFixed(2)} {'\n'}
           rotation z : {Math.sin(orientation.current.z).toFixed(2)}
         </Text>
         <Button title="Start Sensor" onPress={startSensor} />
         <Button title="Stop Sensor" onPress={stopSensor} />
-        <Button title="Calibrate" onPress={() => {
-          orientationInitialized.current = false;
-          data.current = 'index,time,acc x,acc y,acc z,ori x,ori y,ori z\n';
-        }} />
+        <Button title={punchTypes[punchTypeIndex.current]} onPress={() => {punchTypeIndex.current = (punchTypeIndex.current + 1) % punchTypes.length; forceUpdate();}}/>
         <Button title="Share Data" onPress={() => {
           Share.share({
             message: data.current,
@@ -113,7 +111,7 @@ function App() {
           });
         }} />
         <Button title="Clear Data" onPress={() => {
-          data.current = 'index,time,acc x,acc y,acc z,sin ori x,sin ori y,sin ori z,user input\n';
+          data.current = columns;
         }} />
         {/* 무음모드 꺼라 ㅡㅡ */}
         <Button title="Vibrate" onPress={() => {
