@@ -16,8 +16,8 @@ import { accelerometer, gyroscope, setUpdateIntervalForType, SensorTypes } from 
 import { Vector3D } from './src/utils/vector';
 import { autoCalibrate, initializeOrientaion } from './src/utils/math';
 
-const timeInterval = 50; // ms
-const columns = 'index,time,acc x,acc y,acc z,ori x,ori z,punch\n';
+const timeInterval = 25; // ms
+const columns = 'Index,Time,Raw Acceleration X,Raw Acceleration Y,Raw Acceleration Z,Acceleration X,Acceleration Y,Acceleration Z,Angular Velocity X,Angular Velocity Y,Angular Velocity Z,Orientation X,Orientation Y,Orientation Z,Punch Type\n';
 const punchTypes = ['Straight', 'Hook', 'UpperCut', 'Body'];
 
 function App() {
@@ -49,9 +49,8 @@ function App() {
         currentVolume = result.volume;
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const gyroSubscription = gyroscope.subscribe(({ x, y, z }) => {
-        _gyro = new Vector3D(x, 0, z);
+        _gyro = new Vector3D(x, y, z);
       });
 
       const accelSubscription = accelerometer.subscribe(({ x, y, z, timestamp }) => {
@@ -69,7 +68,7 @@ function App() {
           startTime = timestamp;
         }
         const elapsedTime = (timestamp - startTime) / 1000;
-        data.current += `${index},${elapsedTime},${x},${y},${z},${Math.sin(orientation.current.x)},${Math.sin(orientation.current.z)},${punch}\n`;
+        data.current += `${index},${elapsedTime},${x},${y},${z},${acceleration.current.x},${acceleration.current.y},${acceleration.current.z},${_gyro.x},${_gyro.y},${_gyro.z},${Math.sin(orientation.current.x)},${Math.sin(orientation.current.y)},${Math.sin(orientation.current.z)},${punch}\n`;
         punch = 'None';
         index++;
         forceUpdate();
@@ -113,7 +112,6 @@ function App() {
         <Button title="Clear Data" onPress={() => {
           data.current = columns;
         }} />
-        {/* 무음모드 꺼라 ㅡㅡ */}
         <Button title="Vibrate" onPress={() => {
           Vibration.vibrate();
         }} />
