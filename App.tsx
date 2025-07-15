@@ -13,36 +13,22 @@ import {
 import { Subscription } from 'rxjs';
 import { VolumeManager } from 'react-native-volume-manager';
 import { accelerometer, gyroscope, setUpdateIntervalForType, SensorTypes } from 'react-native-sensors';
-// import * as tf from '@tensorflow/tfjs';
-// import { bundleResourceIO } from '@tensorflow/tfjs-react-native';
-
 import { Vector3D } from './src/utils/vector';
 import { autoCalibrate, initializeOrientaion } from './src/utils/math';
 
-const timeInterval = 50; // ms
+const timeInterval = 25; // ms
+const columns = 'Index,Time,Raw Acceleration X,Raw Acceleration Y,Raw Acceleration Z,Acceleration X,Acceleration Y,Acceleration Z,Angular Velocity X,Angular Velocity Y,Angular Velocity Z,Orientation X,Orientation Y,Orientation Z,Punch Type\n';
+const punchTypes = ['Straight', 'Hook', 'UpperCut', 'Body'];
 
 function App() {
   const [, forceUpdate] = useReducer(x => x + 1, 0);
-
-  const data = useRef<string>('index,time,acc x,acc y,acc z,sin ori x,sin ori y,sin ori z,user input\n');
+  const data = useRef<string>(columns);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
-  // const [punchDetector, setPunchDetector] = useState<tf.LayersModel | null>(null);
   const orientationInitialized = useRef<boolean>(false);
-
+  const punchTypeIndex = useRef<number>(0);
   const acceleration = useRef<Vector3D>(new Vector3D(0, 0, 0));
   const orientation = useRef<Vector3D>(new Vector3D(0, 0, 0));
-
   const volumeListener = useRef<ReturnType<typeof VolumeManager.addVolumeListener> | null>(null);
-
-  // try {
-  //   const model = await require('./assets/models/gru-6d/model.json');
-  //   console.log('Model loaded successfully:', model);
-  //   const weight = await require('./assets/models/gru-6d/weight.bin');
-  //   console.log('Weights loaded successfully:', weight);
-  //   setPunchDetector(await tf.loadLayersModel(bundleResourceIO(model, weight)));
-  // } catch (error) {
-  //   console.error('Error loading model:', error);
-  // }
 
   const startSensor = () => {
     if (!subscription) {
@@ -54,11 +40,11 @@ function App() {
       setUpdateIntervalForType(SensorTypes.gyroscope, timeInterval);
       setUpdateIntervalForType(SensorTypes.accelerometer, timeInterval);
 
-      let volumeChanged = 0;
+      let punch = 'None';
 
       volumeListener.current = VolumeManager.addVolumeListener((result) => {
         if (currentVolume !== result.volume) {
-          volumeChanged = 1;
+          punch = punchTypes[punchTypeIndex.current];
         }
         currentVolume = result.volume;
       });
@@ -72,24 +58,18 @@ function App() {
           orientation.current = initializeOrientaion(new Vector3D(x, y, z));
           acceleration.current = new Vector3D(x, y, z);
           orientationInitialized.current = true;
-          // punchDetector?.predict([acceleration.current.x, acceleration.current.y, acceleration.current.z, orientation.current.x, orientation.current.y, orientation.current.z]);
         } else {
           let result = autoCalibrate(new Vector3D(x, y, z), _gyro, orientation.current, timeInterval);
           orientation.current = result.orientation;
           acceleration.current = result.acceleration;
-          // punchDetector?.predict([acceleration.current.x, acceleration.current.y, acceleration.current.z, orientation.current.x, orientation.current.y, orientation.current.z]).then((prediction) => {
-          //   if (prediction[0] > 0.5) {
-          //     Vibration.vibrate(100);
-          //   }
-          // });
         }
 
         if (startTime === null) {
           startTime = timestamp;
         }
         const elapsedTime = (timestamp - startTime) / 1000;
-        data.current += `${index},${elapsedTime},${x},${y},${z},${Math.sin(orientation.current.x)},${Math.sin(orientation.current.y)},${Math.sin(orientation.current.z)},${volumeChanged}\n`;
-        volumeChanged = 0;
+        data.current += `${index},${elapsedTime},${x},${y},${z},${acceleration.current.x},${acceleration.current.y},${acceleration.current.z},${_gyro.x},${_gyro.y},${_gyro.z},${Math.sin(orientation.current.x)},${Math.sin(orientation.current.y)},${Math.sin(orientation.current.z)},${punch}\n`;
+        punch = 'None';
         index++;
         forceUpdate();
       });
@@ -112,23 +92,17 @@ function App() {
 
   return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: 24 }}>
-        <Text style={{ fontSize: 24 }}>Sensor Data Logger</Text>
-        <Text>Accelerometer and Gyroscope</Text>
         <Text style={{color: 'white'}}>
           acceleration x : {acceleration.current.x.toFixed(2)} {'\n'}
           acceleration y : {acceleration.current.y.toFixed(2)} {'\n'}
           acceleration z : {acceleration.current.z.toFixed(2)} {'\n'}
           {'\n'}
           rotation x : {Math.sin(orientation.current.x).toFixed(2)} {'\n'}
-          rotation y : {Math.sin(orientation.current.y).toFixed(2)} {'\n'}
           rotation z : {Math.sin(orientation.current.z).toFixed(2)}
         </Text>
         <Button title="Start Sensor" onPress={startSensor} />
         <Button title="Stop Sensor" onPress={stopSensor} />
-        <Button title="Calibrate" onPress={() => {
-          orientationInitialized.current = false;
-          data.current = 'index,time,acc x,acc y,acc z,ori x,ori y,ori z\n';
-        }} />
+        <Button title={punchTypes[punchTypeIndex.current]} onPress={() => {punchTypeIndex.current = (punchTypeIndex.current + 1) % punchTypes.length; forceUpdate();}}/>
         <Button title="Share Data" onPress={() => {
           Share.share({
             message: data.current,
@@ -136,9 +110,8 @@ function App() {
           });
         }} />
         <Button title="Clear Data" onPress={() => {
-          data.current = 'index,time,acc x,acc y,acc z,sin ori x,sin ori y,sin ori z,user input\n';
+          data.current = columns;
         }} />
-        {/* 무음모드 꺼라 ㅡㅡ */}
         <Button title="Vibrate" onPress={() => {
           Vibration.vibrate();
         }} />
