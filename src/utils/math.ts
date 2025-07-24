@@ -45,7 +45,6 @@ const autoCalibrate = (
   dt: number,
 ): CalibrationResult => {
   const threshold = 1.1;
-
   // cosine similarity should be more than 0.5(which means 60 degrees) since the error value magnifies as the angle converges to 90 degrees(x axis)
   if (
     acceleration.magnitude() < threshold &&
